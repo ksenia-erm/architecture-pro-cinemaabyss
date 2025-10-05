@@ -146,30 +146,48 @@ jobs:
       - name: Start services with Docker Compose
         run: |
           docker compose up -d
+          
+          # Wait for services to start
+          echo "Waiting for services to start..."
+          sleep 30
+          
+          # Check container status
+          echo "=== Container Status ==="
+          docker compose ps
+          
+          # Show logs for debugging
+          echo "=== Monolith logs ==="
+          docker compose logs monolith | tail -50
+          echo "=== Movies service logs ==="
+          docker compose logs movies-service | tail -50
+          echo "=== Events service logs ==="
+          docker compose logs events-service | tail -50
+          echo "=== Proxy service logs ==="
+          docker compose logs proxy-service | tail -50
+          
+          # Check if containers are running
+          echo "=== Checking if containers are running ==="
+          if docker compose ps | grep -q "Exit"; then
+            echo "Some containers have exited. Showing detailed logs:"
+            docker compose ps
+            echo "=== Full Monolith logs ==="
+            docker compose logs monolith
+            echo "=== Full Movies service logs ==="
+            docker compose logs movies-service
+            echo "=== Full Events service logs ==="
+            docker compose logs events-service
+            echo "=== Full Proxy service logs ==="
+            docker compose logs proxy-service
+            exit 1
+          fi
+          
           # Wait for services to be ready
           echo "Waiting for services to be ready..."
           sleep 60
           
-          # Install curl in containers if needed
-          echo "Installing curl in containers..."
-          docker exec cinemaabyss-monolith sh -c "which curl || (apt-get update && apt-get install -y curl)" || true
-          docker exec cinemaabyss-movies-service sh -c "which curl || (apt-get update && apt-get install -y curl)" || true
-          docker exec cinemaabyss-events-service sh -c "which curl || (apt-get update && apt-get install -y curl)" || true
-          docker exec cinemaabyss-proxy-service sh -c "which curl || (apt-get update && apt-get install -y curl)" || true
-          
-          # Check if services are healthy using container names
-          echo "Checking service health..."
-          for i in {1..20}; do
-            if docker exec cinemaabyss-monolith curl -f http://localhost:8080/health 2>/dev/null && \
-               docker exec cinemaabyss-movies-service curl -f http://localhost:8081/health 2>/dev/null && \
-               docker exec cinemaabyss-events-service curl -f http://localhost:8082/health 2>/dev/null && \
-               docker exec cinemaabyss-proxy-service curl -f http://localhost:8000/health 2>/dev/null; then
-              echo "All services are healthy!"
-              break
-            fi
-            echo "Attempt $i: Services not ready yet, waiting..."
-            sleep 15
-          done
+          # Final status check
+          echo "=== Final Container Status ==="
+          docker compose ps
       
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -180,19 +198,21 @@ jobs:
       
       - name: Install Newman and dependencies
         working-directory: tests/postman
-        run: |
-          npm install
-          npm install -g newman-reporter-htmlextra
+        run: npm install
       
       - name: Verify services are running
         run: |
-          echo "Checking service status..."
+          echo "Final service status check..."
           docker compose ps
-          echo "Testing service endpoints..."
-          docker exec cinemaabyss-monolith curl -f http://localhost:8080/health || echo "Monolith not ready"
-          docker exec cinemaabyss-movies-service curl -f http://localhost:8081/health || echo "Movies service not ready"
-          docker exec cinemaabyss-events-service curl -f http://localhost:8082/health || echo "Events service not ready"
-          docker exec cinemaabyss-proxy-service curl -f http://localhost:8000/health || echo "Proxy service not ready"
+          
+          # Check if all containers are running
+          if docker compose ps | grep -q "Exit"; then
+            echo "ERROR: Some containers have exited!"
+            docker compose ps
+            exit 1
+          fi
+          
+          echo "All containers are running successfully!"
       
       - name: Run API tests
         working-directory: tests/postman

@@ -127,15 +127,37 @@ func initKafka() {
 	config.Producer.Return.Successes = true
 	config.Consumer.Return.Errors = true
 
+	// Retry logic for Kafka connection
+	maxRetries := 30
+	retryDelay := 2 * time.Second
+
 	var err error
-	producer, err = sarama.NewSyncProducer([]string{brokers}, config)
+	for i := 0; i < maxRetries; i++ {
+		producer, err = sarama.NewSyncProducer([]string{brokers}, config)
+		if err == nil {
+			break
+		}
+		log.Printf("Failed to start Kafka producer (attempt %d/%d): %v", i+1, maxRetries, err)
+		if i < maxRetries-1 {
+			time.Sleep(retryDelay)
+		}
+	}
 	if err != nil {
-		log.Fatal("Failed to start Kafka producer:", err)
+		log.Fatal("Failed to start Kafka producer after all retries:", err)
 	}
 
-	consumer, err = sarama.NewConsumer([]string{brokers}, config)
+	for i := 0; i < maxRetries; i++ {
+		consumer, err = sarama.NewConsumer([]string{brokers}, config)
+		if err == nil {
+			break
+		}
+		log.Printf("Failed to start Kafka consumer (attempt %d/%d): %v", i+1, maxRetries, err)
+		if i < maxRetries-1 {
+			time.Sleep(retryDelay)
+		}
+	}
 	if err != nil {
-		log.Fatal("Failed to start Kafka consumer:", err)
+		log.Fatal("Failed to start Kafka consumer after all retries:", err)
 	}
 
 	log.Println("Successfully connected to Kafka (producer and consumer)")

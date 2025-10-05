@@ -46,6 +46,11 @@
       "key": "proxy_service_url",
       "value": "{{base_url}}:{{proxy_service_port}}",
       "enabled": true
+    },
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "enabled": true
     }
   ],
   "_postman_variable_scope": "environment"
