@@ -148,20 +148,27 @@ jobs:
           docker compose up -d
           # Wait for services to be ready
           echo "Waiting for services to be ready..."
-          sleep 30
+          sleep 60
           
-          # Check if services are healthy
+          # Install curl in containers if needed
+          echo "Installing curl in containers..."
+          docker exec cinemaabyss-monolith sh -c "which curl || (apt-get update && apt-get install -y curl)" || true
+          docker exec cinemaabyss-movies-service sh -c "which curl || (apt-get update && apt-get install -y curl)" || true
+          docker exec cinemaabyss-events-service sh -c "which curl || (apt-get update && apt-get install -y curl)" || true
+          docker exec cinemaabyss-proxy-service sh -c "which curl || (apt-get update && apt-get install -y curl)" || true
+          
+          # Check if services are healthy using container names
           echo "Checking service health..."
-          for i in {1..30}; do
-            if curl -f http://localhost:8080/health && \
-               curl -f http://localhost:8081/health && \
-               curl -f http://localhost:8082/health && \
-               curl -f http://localhost:8000/health; then
+          for i in {1..20}; do
+            if docker exec cinemaabyss-monolith curl -f http://localhost:8080/health 2>/dev/null && \
+               docker exec cinemaabyss-movies-service curl -f http://localhost:8081/health 2>/dev/null && \
+               docker exec cinemaabyss-events-service curl -f http://localhost:8082/health 2>/dev/null && \
+               docker exec cinemaabyss-proxy-service curl -f http://localhost:8000/health 2>/dev/null; then
               echo "All services are healthy!"
               break
             fi
             echo "Attempt $i: Services not ready yet, waiting..."
-            sleep 10
+            sleep 15
           done
       
       - name: Set up Node.js
@@ -182,10 +189,10 @@ jobs:
           echo "Checking service status..."
           docker compose ps
           echo "Testing service endpoints..."
-          curl -f http://localhost:8080/health || echo "Monolith not ready"
-          curl -f http://localhost:8081/health || echo "Movies service not ready"
-          curl -f http://localhost:8082/health || echo "Events service not ready"
-          curl -f http://localhost:8000/health || echo "Proxy service not ready"
+          docker exec cinemaabyss-monolith curl -f http://localhost:8080/health || echo "Monolith not ready"
+          docker exec cinemaabyss-movies-service curl -f http://localhost:8081/health || echo "Movies service not ready"
+          docker exec cinemaabyss-events-service curl -f http://localhost:8082/health || echo "Events service not ready"
+          docker exec cinemaabyss-proxy-service curl -f http://localhost:8000/health || echo "Proxy service not ready"
       
       - name: Run API tests
         working-directory: tests/postman
