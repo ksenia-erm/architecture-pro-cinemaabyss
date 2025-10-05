@@ -1,0 +1,151 @@
+
+> cinemaabyss-api-tests@1.0.0 test
+> node run-tests.js
+
+Running tests against local environment...
+(node:24369) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
+newman: could not find "htmlextra" reporter
+  ensure that the reporter is installed in the same directory as newman
+  please install reporter using npm
+
+newman
+
+CinemaAbyss API Tests
+
+❏ Monolith Service
+↳ Health Check
+  GET http://127.0.0.1:8080/health [200 OK, 124B, 37ms]
+  ✓  Status code is 200
+
+↳ Get All Users
+  GET http://127.0.0.1:8080/api/users [200 OK, 415B, 10ms]
+  ✓  Status code is 200
+  ✓  Response is an array
+
+↳ Create User
+  POST http://127.0.0.1:8080/api/users [201 Created, 181B, 14ms]
+  ✓  Status code is 201
+  ✓  Response has id
+
+↳ Get User by ID
+  GET http://127.0.0.1:8080/api/users?id=6 [200 OK, 176B, 6ms]
+  ✓  Status code is 200
+  ✓  User ID matches
+
+↳ Get All Movies
+  GET http://127.0.0.1:8080/api/movies [200 OK, 1.98kB, 32ms]
+  ✓  Status code is 200
+  ✓  Response is an array
+
+↳ Create Movie
+  POST http://127.0.0.1:8080/api/movies [201 Created, 246B, 15ms]
+  ✓  Status code is 201
+  ✓  Response has id
+
+↳ Get Movie by ID
+  GET http://127.0.0.1:8080/api/movies?id=10 [200 OK, 241B, 6ms]
+  ✓  Status code is 200
+  ✓  Movie ID matches
+
+↳ Create Payment
+  POST http://127.0.0.1:8080/api/payments [201 Created, 193B, 9ms]
+  ✓  Status code is 201
+  ✓  Response has id
+
+↳ Get Payment by ID
+  GET http://127.0.0.1:8080/api/payments?id=6 [200 OK, 185B, 7ms]
+  ✓  Status code is 200
+  ✓  Payment ID matches
+
+↳ Create Subscription
+  POST http://127.0.0.1:8080/api/subscriptions [201 Created, 235B, 6ms]
+  ✓  Status code is 201
+  ✓  Response has id
+
+↳ Get Subscription by ID
+  GET http://127.0.0.1:8080/api/subscriptions?id=6 [200 OK, 230B, 4ms]
+  ✓  Status code is 200
+  ✓  Subscription ID matches
+
+❏ Movies Microservice
+↳ Health Check
+  GET http://127.0.0.1:8081/api/movies/health [200 OK, 124B, 8ms]
+  ✓  Status code is 200
+  ✓  Status is true
+
+↳ Get All Movies
+  GET http://127.0.0.1:8081/api/movies [200 OK, 2.11kB, 27ms]
+  ✓  Status code is 200
+  ✓  Response is an array
+
+↳ Create Movie
+  POST http://127.0.0.1:8081/api/movies [201 Created, 283B, 16ms]
+  ✓  Status code is 201
+  ✓  Response has id
+
+↳ Get Movie by ID
+  GET http://127.0.0.1:8081/api/movies?id=11 [200 OK, 278B, 8ms]
+  ✓  Status code is 200
+  ✓  Movie ID matches
+
+❏ Events Microservice
+↳ Health Check
+  GET http://127.0.0.1:8082/api/events/health [200 OK, 124B, 20ms]
+  ✓  Status code is 200
+  ✓  Status is true
+
+↳ Create Movie Event
+  POST http://127.0.0.1:8082/api/events/movie [201 Created, 361B, 20ms]
+  ✓  Status code is 201
+  ✓  Response has status success
+
+↳ Create User Event
+  POST http://127.0.0.1:8082/api/events/user [201 Created, 353B, 9ms]
+  ✓  Status code is 201
+  ✓  Response has status success
+
+↳ Create Payment Event
+  POST http://127.0.0.1:8082/api/events/payment [201 Created, 394B, 7ms]
+  ✓  Status code is 201
+  ✓  Response has status success
+
+❏ Proxy Service
+↳ Health Check
+  GET http://127.0.0.1:8000/health [200 OK, 124B, 8ms]
+  ✓  Status code is 200
+
+↳ Get All Movies via Proxy
+  GET http://127.0.0.1:8000/api/movies [200 OK, 2.28kB, 20ms]
+  ✓  Status code is 200
+  ✓  Response is an array
+
+↳ Get All Users via Proxy
+  GET http://127.0.0.1:8000/api/users [200 OK, 483B, 4ms]
+  ✓  Status code is 200
+  ✓  Response is an array
+
+┌─────────────────────────┬──────────────────┬─────────────────┐
+│                         │         executed │          failed │
+├─────────────────────────┼──────────────────┼─────────────────┤
+│              iterations │                1 │               0 │
+├─────────────────────────┼──────────────────┼─────────────────┤
+│                requests │               22 │               0 │
+├─────────────────────────┼──────────────────┼─────────────────┤
+│            test-scripts │               22 │               0 │
+├─────────────────────────┼──────────────────┼─────────────────┤
+│      prerequest-scripts │                0 │               0 │
+├─────────────────────────┼──────────────────┼─────────────────┤
+│              assertions │               42 │               0 │
+├─────────────────────────┴──────────────────┴─────────────────┤
+│ total run duration: 2.9s                                     │
+├──────────────────────────────────────────────────────────────┤
+│ total data received: 8.68kB (approx)                         │
+├──────────────────────────────────────────────────────────────┤
+│ average response time: 13ms [min: 4ms, max: 37ms, s.d.: 9ms] │
+└──────────────────────────────────────────────────────────────┘
+Newman run completed!
+Total requests: 22
+Failed requests: 0
+Total assertions: 42
+Failed assertions: 0

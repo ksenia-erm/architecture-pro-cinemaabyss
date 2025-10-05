@@ -1,29 +1,55 @@
 {
-  "id": "local-env",
+  "id": "local-environment",
   "name": "Local Environment",
   "values": [
     {
+      "key": "base_url",
+      "value": "http://localhost",
+      "enabled": true
+    },
+    {
+      "key": "monolith_port",
+      "value": "8080",
+      "enabled": true
+    },
+    {
+      "key": "movies_service_port",
+      "value": "8081",
+      "enabled": true
+    },
+    {
+      "key": "events_service_port",
+      "value": "8082",
+      "enabled": true
+    },
+    {
+      "key": "proxy_service_port",
+      "value": "8000",
+      "enabled": true
+    },
+    {
+      "key": "monolith_url",
+      "value": "{{base_url}}:{{monolith_port}}",
+      "enabled": true
+    },
+    {
+      "key": "movies_service_url",
+      "value": "{{base_url}}:{{movies_service_port}}",
+      "enabled": true
+    },
+    {
+      "key": "events_service_url",
+      "value": "{{base_url}}:{{events_service_port}}",
+      "enabled": true
+    },
+    {
+      "key": "proxy_service_url",
+      "value": "{{base_url}}:{{proxy_service_port}}",
+      "enabled": true
+    },
+    {
       "key": "baseUrl",
-      "value": "http://127.0.0.1:8080",
-      "type": "default",
-      "enabled": true
-    },
-    {
-      "key": "moviesServiceUrl",
-      "value": "http://127.0.0.1:8081",
-      "type": "default",
-      "enabled": true
-    },
-    {
-      "key": "eventsServiceUrl",
-      "value": "http://127.0.0.1:8082",
-      "type": "default",
-      "enabled": true
-    },
-    {
-      "key": "proxyServiceUrl",
-      "value": "http://127.0.0.1:8000",
-      "type": "default",
+      "value": "http://localhost:8080",
       "enabled": true
     }
   ],
