@@ -1,0 +1,114 @@
+@startuml C4_Container_Kinobezdna
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+Person(user, "End user", "Пользователь: Web / Mobile / SmartTV")
+Person(marketer, "Sales & Marketing", "Команда продвижения")
+
+
+System_Ext(oauth, "OAuth / OpenID Provider", "Внешний провайдер аутентификации")
+System_Ext(recommender, "External Recommender", "Внешняя рекомендательная система")
+System_Ext(payment_gateway, "Payment Gateway Adapter", "Контур/адаптер для интеграции с банками / acquirers")
+
+System_Boundary(k8s, "Kubernetes Cluster (To-Be)") {
+Container(bff_web, "BFF — Web", "Go/Node", "Принимает запросы от web, вызывает API Gateway")
+Container(bff_mobile, "BFF — Mobile", "Go/Node", "Принимает запросы от мобильного приложения, минимальные payload")
+Container(bff_tv, "BFF — SmartTV", "Go/Node", "Принимает запросы от SmartTV")
+
+
+Container(api_gateway, "Proxy Service (API Gateway)", "Go", "Маршрутизация и feature-toggle процентного канала; фасад для внешнего API")
+
+
+Container(monolith, "Legacy Monolith (Go)", "Go", "Старый монолит, пока обрабатывает все функции; трафик переключается по процентам через gateway")
+
+
+Container(movies, "Movies Service", "Go + PostgreSQL + S3", "Метаданные фильмов, жанры, актёры, рейтинги")
+Container(events, "Events Service (Kafka producer/consumer)", "Go + Kafka", "Обработка внутренних событий, шина событий")
+Container(payments, "Payments Service", "Go + PostgreSQL", "Платежи, взаимодействие с payment_gateway, публикует события в Kafka")
+Container(preferences, "Preferences Service", "Go + PostgreSQL", "Хранение предпочтений и взаимодействие с External Recommender")
+Container(users, "User Service", "Go + PostgreSQL", "Аутентификация (delegated), профиль пользователя, подписки")
+
+
+Container(kafka, "Kafka Cluster", "Kafka", "Внутренняя шина событий: topics: movie.events, user.events, payment.events, audit.events")
+
+
+ContainerDb(postgres_movies, "Postgres (movies)", "PostgreSQL", "DB для Movies Service")
+ContainerDb(postgres_payments, "Postgres (payments)", "PostgreSQL", "DB для Payments Service")
+ContainerDb(postgres_preferences, "Postgres (preferences)", "PostgreSQL", "DB для Preferences Service")
+ContainerDb(postgres_users, "Postgres (users)", "PostgreSQL", "DB для User Service")
+
+
+ContainerDb(s3_movies, "S3-compatible storage", "S3", "Объекты: оригиналы/потоки фильмов, постеры")
+
+System_Boundary(statistics, "Monitoring & Logging") {
+    Container(prometheus, "Prometheus", "Monitoring", "Сбор метрик из сервисов, kube-state-metrics")
+    Container(grafana, "Grafana", "Visualisation", "Дашборды для метрик")
+}
+
+Container(efk, "ELK/EFK (Elasticsearch + Fluentd + Kibana)", "Logging", "Сбор и хранение логов приложений и кластера")
+
+
+Container(ci_cd, "CI/CD (GitLab/GitHub Actions + Helm)", "CI/CD", "Pipelines: build, test, image push, helm deploy")
+}
+
+Rel(user, bff_web, "HTTP/HTTPS: REST")
+Rel(user, bff_mobile, "HTTP/HTTPS: REST (mobile-optimized)")
+Rel(user, bff_tv, "HTTP/HTTPS: REST (TV-optimized)")
+
+Rel(marketer, bff_web, "HTTP/HTTPS: REST")
+
+Rel(bff_web, api_gateway, "REST — проксирование запросов и aggregation")
+Rel(bff_mobile, api_gateway, "REST")
+Rel(bff_tv, api_gateway, "REST")
+
+
+Rel(api_gateway, monolith, "HTTP REST — часть трафика по feature toggle (percent-based)")
+Rel(api_gateway, movies, "HTTP REST — часть трафика по feature toggle (percent-based)")
+Rel(api_gateway, users, "HTTP REST")
+Rel(api_gateway, payments, "HTTP REST")
+Rel(api_gateway, preferences, "HTTP REST")
+
+Rel(monolith, kafka, "Publishes/Consumes events")
+Rel(movies, kafka, "Publishes movie.events (view, rating, favorite)")
+Rel(payments, kafka, "Publishes payment.events, Consumes payment.commands")
+Rel(users, kafka, "Publishes user.events (register, login)")
+Rel(preferences, kafka, "Consumes movie.events, user.events — для обновления профилей и отправки запросов к recommender")
+
+
+Rel(movies, postgres_movies, "Reads/Writes metadata")
+Rel(movies, s3_movies, "Stores/Reads video assets")
+Rel(payments, postgres_payments, "Reads/Writes payments")
+Rel(preferences, postgres_preferences, "Reads/Writes preferences & ratings")
+Rel(users, postgres_users, "Reads/Writes user profiles")
+
+
+Rel(preferences, recommender, "HTTP/gRPC: calls external recommender to get recommendations")
+Rel(payments, payment_gateway, "HTTP: interacts via internal adapter")
+Rel(api_gateway, oauth, "OAuth/OpenID redirects & token validation")
+
+Rel(kafka, events, "Topics: movie.events, user.events, payment.events, audit.events")
+Rel(events, kafka, "Producer/Consumer for system-wide workflows")
+
+
+Rel(prometheus, movies, "Scrapes /metrics")
+Rel(prometheus, payments, "Scrapes /metrics")
+Rel(prometheus, preferences, "Scrapes /metrics")
+Rel(prometheus, users, "Scrapes /metrics")
+Rel(grafana, prometheus, "Query metrics")
+
+
+Rel(efk, movies, "Receives logs via Fluentd/Fluentbit")
+Rel(efk, payments, "Receives logs")
+Rel(efk, preferences, "Receives logs")
+Rel(efk, users, "Receives logs")
+
+
+Rel(ci_cd, api_gateway, "Helm deploy / CI pipelines")
+Rel(ci_cd, movies, "Build & deploy microservices via Helm")
+Rel(ci_cd, payments, "Build & deploy microservices via Helm")
+Rel(ci_cd, preferences, "Build & deploy microservices via Helm")
+Rel(ci_cd, users, "Build & deploy microservices via Helm")
+Rel(ci_cd, kafka, "Deploy / manage infra charts (Kafka, Zookeeper)")
+
+@enduml
