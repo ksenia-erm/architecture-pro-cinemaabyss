@@ -38,7 +38,45 @@ jobs:
           docker compose up -d
           # Wait for services to be ready
           echo "Waiting for services to be ready..."
-          sleep 120
+          sleep 30
+          
+          # Check container status
+          echo "=== Container Status ==="
+          docker compose ps
+          
+          # Show logs for debugging
+          echo "=== Monolith logs ==="
+          docker compose logs monolith | tail -20
+          echo "=== Movies service logs ==="
+          docker compose logs movies-service | tail -20
+          echo "=== Events service logs ==="
+          docker compose logs events-service | tail -20
+          echo "=== Proxy service logs ==="
+          docker compose logs proxy-service | tail -20
+          
+          # Check if containers are running
+          echo "=== Checking if containers are running ==="
+          if docker compose ps | grep -q "Exit"; then
+            echo "Some containers have exited. Showing detailed logs:"
+            docker compose ps
+            echo "=== Full Monolith logs ==="
+            docker compose logs monolith
+            echo "=== Full Movies service logs ==="
+            docker compose logs movies-service
+            echo "=== Full Events service logs ==="
+            docker compose logs events-service
+            echo "=== Full Proxy service logs ==="
+            docker compose logs proxy-service
+            exit 1
+          fi
+          
+          # Wait for services to be ready
+          echo "Waiting for services to be ready..."
+          sleep 60
+          
+          # Final status check
+          echo "=== Final Container Status ==="
+          docker compose ps
       
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -53,17 +91,7 @@ jobs:
       
       - name: Run API tests
         working-directory: tests/postman
-        run: |
-
-          docker compose up -d
-          # Wait for services to be ready
-          echo "Waiting for services to be ready..."
-          sleep 15
-          # Build the Docker image
-          docker build -t cinemaabyss-api-tests .
-          
-          # Run the tests in Docker
-          docker run --network=cinemaabyss-network -v "$(pwd)/reports:/app/reports" cinemaabyss-api-tests
+        run: npm test
         
       
       - name: Stop services
