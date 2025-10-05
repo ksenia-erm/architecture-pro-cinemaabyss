@@ -148,7 +148,21 @@ jobs:
           docker compose up -d
           # Wait for services to be ready
           echo "Waiting for services to be ready..."
-          sleep 120
+          sleep 30
+          
+          # Check if services are healthy
+          echo "Checking service health..."
+          for i in {1..30}; do
+            if curl -f http://localhost:8080/health && \
+               curl -f http://localhost:8081/health && \
+               curl -f http://localhost:8082/health && \
+               curl -f http://localhost:8000/health; then
+              echo "All services are healthy!"
+              break
+            fi
+            echo "Attempt $i: Services not ready yet, waiting..."
+            sleep 10
+          done
       
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -159,7 +173,19 @@ jobs:
       
       - name: Install Newman and dependencies
         working-directory: tests/postman
-        run: npm install
+        run: |
+          npm install
+          npm install -g newman-reporter-htmlextra
+      
+      - name: Verify services are running
+        run: |
+          echo "Checking service status..."
+          docker compose ps
+          echo "Testing service endpoints..."
+          curl -f http://localhost:8080/health || echo "Monolith not ready"
+          curl -f http://localhost:8081/health || echo "Movies service not ready"
+          curl -f http://localhost:8082/health || echo "Events service not ready"
+          curl -f http://localhost:8000/health || echo "Proxy service not ready"
       
       - name: Run API tests
         working-directory: tests/postman
