@@ -163,8 +163,32 @@ func initKafka() {
 	log.Println("Successfully connected to Kafka (producer and consumer)")
 }
 
+func waitForTopics(topics []string) {
+	maxRetries := 30
+	retryDelay := 2 * time.Second
+
+	for _, topic := range topics {
+		for i := 0; i < maxRetries; i++ {
+			_, err := consumer.Partitions(topic)
+			if err == nil {
+				log.Printf("Topic %s is ready", topic)
+				break
+			}
+			log.Printf("Waiting for topic %s to be created (attempt %d/%d): %v", topic, i+1, maxRetries, err)
+			if i < maxRetries-1 {
+				time.Sleep(retryDelay)
+			} else {
+				log.Printf("Warning: Topic %s not found after %d attempts, continuing anyway", topic, maxRetries)
+			}
+		}
+	}
+}
+
 func startConsumer() {
 	topics := []string{"movie-events", "user-events", "payment-events"}
+
+	// Wait for topics to be created
+	waitForTopics(topics)
 
 	for _, topic := range topics {
 		wg.Add(1)
